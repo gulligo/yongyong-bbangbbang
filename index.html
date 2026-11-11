@@ -95,7 +95,7 @@ let calY,calM,fuelY,maintY,statY;
 
 function loadCfg(){try{return JSON.parse(localStorage.getItem('bb_cfg'))||{}}catch(e){return{}}}
 function load(){let d;try{d=JSON.parse(localStorage.getItem('bb_data'))}catch(e){}return fix(d||{})}
-function fix(d){d.car=d.car||{name:'베라크루즈',fuel:'경유'};d.records=d.records||[];d.plans=d.plans||[];d.parts=d.parts||DEF_PARTS.map(p=>({...p}));d.updated=d.updated||0;return d}
+function fix(d){d.car=d.car||{name:'베라크루즈',fuel:'경유'};if(d.car.plate===undefined)d.car.plate='25거6233';d.records=d.records||[];d.plans=d.plans||[];d.parts=d.parts||DEF_PARTS.map(p=>({...p}));d.updated=d.updated||0;return d}
 
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(+n||0).toLocaleString('ko-KR');
@@ -201,7 +201,7 @@ function home(){
   return `
   <div class="card" style="display:flex;gap:14px;align-items:center">
     <div style="font-size:44px">🚙</div>
-    <div style="flex:1"><div style="font-size:18px;font-weight:700">${esc(D.car.name)}</div><div class="mu">${esc(D.car.fuel)}${first?' · 관리 '+(dayDiff(first,t)+1)+'일':''}</div></div>
+    <div style="flex:1"><div style="font-size:18px;font-weight:700">${esc(D.car.name)}</div><div class="mu">${D.car.plate?esc(D.car.plate)+' · ':''}${esc(D.car.fuel)}${first?' · 관리 '+(dayDiff(first,t)+1)+'일':''}</div></div>
     <div style="text-align:right"><div class="lb">총 주행거리</div><div style="font-weight:700;font-size:17px">${fmt(curKm())}km</div></div>
   </div>
   ${soon.map(p=>{const d=dayDiff(t,p.date);return `<div class="alert" onclick="go('maint')">⚠️ 다가오는 정비계획: <b>${esc(p.item)}</b> (${p.date}, ${d>0?'D-'+d:d===0?'오늘':d*-1+'일 지남'})</div>`}).join('')}
@@ -365,6 +365,7 @@ function delRec(){if(!confirm('이 기록을 삭제할까요?'))return;D.records
 function openSet(){
   sheet(`<h2>설정</h2>
   <label class="f">차량 이름<input id="sName" value="${esc(D.car.name)}"></label>
+  <label class="f">차량번호<input id="sPlate" value="${esc(D.car.plate||'')}"></label>
   <label class="f">연료<select id="sFuel">${['경유','휘발유','LPG','전기','하이브리드'].map(f=>`<option ${D.car.fuel===f?'selected':''}>${f}</option>`).join('')}</select></label>
   <label class="f">Worker 주소<input id="sUrl" value="${esc(cfg.url||'')}" placeholder="https://bbangbbang.xxxx.workers.dev"></label>
   <label class="f">비밀번호 (APP_KEY)<input id="sKey" type="password" value="${esc(cfg.key||'')}"></label>
@@ -374,11 +375,11 @@ function openSet(){
   <div class="mu" style="margin-top:12px">상단 점: 초록=동기화됨 · 노랑=저장 중 · 빨강=실패 · 회색=Worker 미설정</div>`);
 }
 async function saveSet(){
-  const name=$('sName').value.trim()||'베라크루즈',fuel=$('sFuel').value;
+  const name=$('sName').value.trim()||'베라크루즈',fuel=$('sFuel').value,plate=$('sPlate').value.trim();
   cfg.url=$('sUrl').value.trim().replace(/\/+$/,'');cfg.key=$('sKey').value.trim();
   localStorage.setItem('bb_cfg',JSON.stringify(cfg));closeSheet();
   await pull();
-  if(name!==D.car.name||fuel!==D.car.fuel){D.car={name,fuel};save()}else render();
+  if(name!==D.car.name||fuel!==D.car.fuel||plate!==(D.car.plate||'')){D.car={name,fuel,plate};save()}else render();
 }
 function exportJ(){
   const a=document.createElement('a');
